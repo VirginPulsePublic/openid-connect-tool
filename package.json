@@ -1,0 +1,20 @@
+{
+  "name": "openid-connect-tool",
+  "dependencies": {
+    "bootstrap": "^3.3.7",
+    "http-server": "0.9.0",
+    "jquery": "^3.2.1",
+    "js-cookie": "2.1.4",
+    "jwt-decode": "^2.2.0"
+  },
+  "engines": {
+    "node": ">=6.10.2"
+  },
+  "scripts": {
+    "start": "./node_modules/http-server/bin/http-server -a localhost -o -p 8080 -r -c-1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VirginPulsePublic/openid-connect-tool.git"
+  }
+}
