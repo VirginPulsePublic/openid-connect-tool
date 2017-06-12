@@ -18,16 +18,18 @@ var settings,
     action,
     code;
 
-init();
-
 function init() {
     var params = new URLSearchParams(window.location.search);
     var queryParamCode = params.get('code');
     //remove code from URL
-    var refreshLocation = window.location.href.split("?")[0];
     if (queryParamCode) {
         localStorage.setItem('code', queryParamCode);
     }
+
+    $('#app-setting-input').tooltip({'trigger':'focus'});
+    $('#app-setting-input').on("click", function () {
+        $(this).select();
+    });
 
     var cookieCode = localStorage.getItem('code');
     if (cookieCode) {
@@ -273,18 +275,10 @@ function loadSettingsIntoUI() {
     $('#response_type').val(settings.response_type);
     $('#scope').val(settings.scope);
     $('#redirect_uri').val(settings.redirect_uri);
+    $('#app-setting-input').val(JSON.stringify(settings));
     if (settings.token) {
       $('#decoded-token').val(JSON.stringify(jwt_decode(settings.token.access_token), null, '    '));
     }
-}
-
-function clearSettingsFromUI() {
-  $('#authority').val('');
-  $('#client_id').val('');
-  $('#client_secret').val('');
-  $('#response_type').val('');
-  $('#scope').val('');
-  $('#redirect_uri').val('');
 }
 
 function loadDefaultSettings() {
@@ -296,10 +290,6 @@ function loadDefaultSettings() {
 
 function saveSettingsInLocalStorage() {
     localStorage.setItem('settings', JSON.stringify(settings));
-}
-
-function deleteSettingsFromLocalStorage() {
-    localStorage.removeItem('settings');
 }
 
 function getSettingsInLocalStorage() {
@@ -322,16 +312,6 @@ function connectionGood() {
   $('.glyphicon', button)
     .removeClass('glyphicon-thumbs-down')
     .addClass('glyphicon-thumbs-up');
-}
-
-function connectionUntested() {
-  var button = $('#test-issuer');
-  button
-    .removeClass('btn-success btn-danger')
-    .addClass('btn-warning');
-  $('.glyphicon', button)
-    .removeClass('glyphicon-thumbs-up')
-    .addClass('glyphicon-thumbs-down');
 }
 
 function connectionFailed() {
@@ -363,11 +343,25 @@ function inputChanged(el) {
   } else {
     div.removeClass('bg-warning').addClass('bg-success');
   }
+  pullSettingsFromUI();
+  $('#app-setting-input').val(JSON.stringify(settings));
 }
 
 function authorityChanged(el) {
   inputChanged(el);
   testIssuerURL();
+}
+
+function appSettingsChanged() {
+    var appSettings = $('#app-setting-input').val();
+    if (!settings) {
+        settings = $.extend({}, defaultSettings);
+        saveSettingsInLocalStorage();
+    } else {
+        settings = JSON.parse(appSettings);
+    }
+    loadSettingsIntoUI();
+    pullSettingsFromUI();
 }
 
 function markAsSaved() {
@@ -383,3 +377,5 @@ function postBodyEncode(obj) {
     }
   return str.join("&");
 }
+
+init();
