@@ -1,16 +1,20 @@
 <template>
   <div class="app v-cloak" id="app">
-    <hello></hello>
+    <app-settings></app-settings>
+    <results-panel></results-panel>
   </div>
 </template>
 
 <script>
-import Hello from '@/components/Hello'
+
+import AppSettings from '@/components/AppSettings'
+import ResultsPanel from '@/components/ResultsPanel'
 
 export default {
   name: 'app',
   components: {
-    'hello': Hello
+    AppSettings,
+    ResultsPanel
   }
 }
 </script>
