@@ -6,7 +6,6 @@
 </template>
 
 <script>
-
 import AppSettings from '@/components/AppSettings'
 import ResultsPanel from '@/components/ResultsPanel'
 
