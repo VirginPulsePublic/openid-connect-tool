@@ -11,7 +11,7 @@
               Issuer URL
             </label>
             <div class="col-md-5">
-              <input id="authority" class="form-control" type="text" name="authority" v-model="authority">
+              <input id="authority" class="form-control" type="text" name="authority" v-model="authority" v-on:change="testConnection" v-on:keydown="testConnection">
             </div>
           </div>
           <div class="form-group">
@@ -81,8 +81,8 @@
               <button type="button" class="btn btn-primary" v-on:click="saveSettings">
                 Save
               </button>
-              <button id="test-issuer" type="button" class="btn btn-warning">
-                <span class="glyphicon glyphicon-thumbs-down" aria-hidden="true"></span>
+              <button id="test-issuer" type="button" class="btn" v-bind:class="{ 'btn-warning': connection === 'untested', 'btn-success': connection === 'good', 'btn-danger': connection === 'bad' }">
+                <span class="glyphicon" v-bind:class="{ 'glyphicon-thumbs-down': connection === 'untested' || connection === 'bad', 'glyphicon-thumbs-up': connection === 'good' }" aria-hidden="true"></span>
                 Test Issuer URL
               </button>
               <button type="button" class="btn btn-error" v-on:click="restoreDefaults">
@@ -135,6 +135,7 @@
 <script>
 // import Cookie from 'js-cookie'
 import merge from 'lodash/merge'
+import debounce from 'lodash/debounce'
 
 let defaultSettings = {
   authority: 'http://locahost:8080/auth/realms/test',
@@ -158,7 +159,8 @@ export default {
       client_id: '',
       client_secret: '',
       scope: '',
-      redirect_uri: ''
+      redirect_uri: '',
+      connection: 'untested'
     }, defaultSettings, JSON.parse(localStorage.getItem('settings')))
   },
   computed: {
@@ -197,7 +199,16 @@ export default {
       this.client_secret = defaultSettings.client_secret
       this.scope = defaultSettings.scope
       this.redirect_uri = defaultSettings.redirect_uri
-    }
+    },
+    testConnection: debounce(function () {
+      if (this.authority.length === 0) {
+        this.connection = 'untested'
+      } else if (this.authority.length === 1) {
+        this.connection = 'bad'
+      } else {
+        this.connection = 'good'
+      }
+    }, 1000)
   }
 }
 </script>
