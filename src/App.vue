@@ -99,7 +99,7 @@
       </div>
       <div class="panel-body">
         <div class="btn-group">
-            <button id="button-login" type="button" class="btn btn-primary">
+            <button id="button-login" type="button" class="btn btn-primary" v-on:click="loginButtonClick">
                 Login
             </button>
             <button id="button-token" type="button" class="btn btn-primary">
@@ -177,6 +177,9 @@ export default {
       return this.protocolUrl + '/userinfo'
     }
   },
+  mounted () {
+    this.testConnection()
+  },
   methods: {
     saveSettings () {
       localStorage.setItem('settings', JSON.stringify({
@@ -199,6 +202,7 @@ export default {
       this.client_secret = defaultSettings.client_secret
       this.scope = defaultSettings.scope
       this.redirect_uri = defaultSettings.redirect_uri
+      this.saveSettings()
     },
     testConnection: debounce(function () {
       if (this.authority.length === 0) {
@@ -208,7 +212,10 @@ export default {
       } else {
         this.connection = 'good'
       }
-    }, 1000)
+    }, 1000),
+    loginButtonClick () {
+
+    }
   }
 }
 </script>
