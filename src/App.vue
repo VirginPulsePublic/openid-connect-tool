@@ -10,8 +10,9 @@
             <label for="authority" class="col-md-2 control-label">
               Issuer URL
             </label>
-            <div class="col-md-5">
-              <input id="authority" class="form-control" type="text" name="authority" v-model="authority" v-on:change="testConnection" v-on:keydown="testConnection">
+            <div v-bind:class="{ 'has-warning': mismatchingProtocols }" class="col-md-5">
+              <input id="authority" class="form-control" type="url" name="authority" v-model="authority" v-on:change="testConnection" v-on:keydown="testConnection">
+              <div v-show="mismatchingProtocols" class="alert alert-warning" role="alert">Mismatching protocols detected. Browser might block connection test.</div>
             </div>
           </div>
           <div class="form-group">
@@ -133,9 +134,9 @@
 </template>
 
 <script>
-// import Cookie from 'js-cookie'
 import merge from 'lodash/merge'
 import debounce from 'lodash/debounce'
+import axios from 'axios'
 
 let defaultSettings = {
   authority: 'http://locahost:8080/auth/realms/test',
@@ -150,6 +151,9 @@ let defaultSettings = {
 
 export default {
   name: 'app',
+  mounted () {
+    this.testConnection()
+  },
   data () {
     return merge({
       authority: '',
@@ -160,7 +164,8 @@ export default {
       client_secret: '',
       scope: '',
       redirect_uri: '',
-      connection: 'untested'
+      connection: 'untested',
+      mismatchingProtocols: false
     }, defaultSettings, JSON.parse(localStorage.getItem('settings')))
   },
   computed: {
@@ -176,9 +181,6 @@ export default {
     userInfoUrl () {
       return this.protocolUrl + '/userinfo'
     }
-  },
-  mounted () {
-    this.testConnection()
   },
   methods: {
     saveSettings () {
@@ -205,13 +207,22 @@ export default {
       this.saveSettings()
     },
     testConnection: debounce(function () {
-      if (this.authority.length === 0) {
-        this.connection = 'untested'
-      } else if (this.authority.length === 1) {
-        this.connection = 'bad'
+      const url = new URL(this.authority)
+      const protocol = url.protocol
+      debugger
+      if (window.location.protocol !== protocol) {
+        this.mismatchingProtocols = true
       } else {
-        this.connection = 'good'
+        this.mismatchingProtocols = false
       }
+
+      axios
+      .get(this.authority)
+      .then(() => {
+        this.connection = 'good'
+      }).catch(() => {
+        this.connection = 'bad'
+      })
     }, 1000),
     loginButtonClick () {
 
