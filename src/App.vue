@@ -13,6 +13,7 @@
             <div v-bind:class="{ 'has-warning': mismatchingProtocols }" class="col-md-5">
               <input id="authority" class="form-control" type="url" name="authority" v-model="authority" v-on:change="testConnection" v-on:keydown="testConnection">
               <div v-show="mismatchingProtocols" class="alert alert-warning" role="alert">Mismatching protocols detected. Browser might block connection test.</div>
+              <div v-show="badUrl" class="alert alert-error" role="alert">The URL you provided is malformed.</div>
             </div>
           </div>
           <div class="form-group">
@@ -118,12 +119,12 @@
         </div>
         <br> <br>
         <div class="btn-group">
-          <button id="button-go" type="button" class="btn btn-primary btn-lg" onclick="executeRequest()">
+          <button id="button-go" type="button" class="btn btn-primary btn-lg" v-on:click="goButtonClick">
             Go!
           </button>
         </div>
         <br> <br>
-        <textarea id="request" class="form-control" rows="7" value="" placeholder="This'll be populated with what the request would look like"></textarea>
+        <textarea id="request" class="form-control" rows="7" value="" v-model="requestText" placeholder="This'll be populated with what the request would look like"></textarea>
         <br>
         <textarea id="response" class="form-control" rows="5" placeholder="This is what the server's response will look like"></textarea>
         <br> <br>
@@ -137,6 +138,7 @@
 import merge from 'lodash/merge'
 import debounce from 'lodash/debounce'
 import axios from 'axios'
+import queryString from 'query-string'
 
 let defaultSettings = {
   authority: 'http://locahost:8080/auth/realms/test',
@@ -165,7 +167,10 @@ export default {
       scope: '',
       redirect_uri: '',
       connection: 'untested',
-      mismatchingProtocols: false
+      mismatchingProtocols: false,
+      badUrl: false,
+      clickedButton: 'none',
+      requestText: ''
     }, defaultSettings, JSON.parse(localStorage.getItem('settings')))
   },
   computed: {
@@ -206,10 +211,24 @@ export default {
       this.redirect_uri = defaultSettings.redirect_uri
       this.saveSettings()
     },
+    verifyAuthorityUrl () {
+      try {
+        const url = new URL(this.authority)
+        this.badUrl = false
+        return url
+      } catch (e) {
+        this.badUrl = true
+        return
+      }
+    },
     testConnection: debounce(function () {
-      const url = new URL(this.authority)
+      const url = this.verifyAuthorityUrl()
+      if (!url) {
+        return
+      }
+
       const protocol = url.protocol
-      debugger
+
       if (window.location.protocol !== protocol) {
         this.mismatchingProtocols = true
       } else {
@@ -225,7 +244,38 @@ export default {
       })
     }, 1000),
     loginButtonClick () {
-
+      switch (this.grant_type) {
+        case 'code':
+          const url = new URL(this.authUrl)
+          url.search = queryString.stringify({
+            client_id: this.client_id,
+            redirect_uri: this.redirect_uri,
+            scope: this.scope,
+            response_type: this.grant_type
+          })
+          this.clickedButton = 'login'
+          this.requestText =
+      `Request Method: GET
+Request URL (Line breaks added for readability):
+${url.toString().replace(/&/g, '&\n').replace(/\?/g, '?\n')}`
+          this.gotoUrl = url.toString()
+          break
+        case 'password':
+          break
+        case 'client_credentials':
+          break
+      }
+    },
+    goButtonClick () {
+      switch (this.grant_type) {
+        case 'code':
+          window.location.href = this.gotoUrl
+          break
+        case 'password':
+          break
+        case 'client_credentials':
+          break
+      }
     }
   }
 }
