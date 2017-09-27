@@ -101,10 +101,10 @@
       </div>
       <div class="panel-body">
         <div class="btn-group">
-            <button id="button-login" type="button" class="btn btn-primary" v-on:click="loginButtonClick">
+            <button id="button-login" type="button" class="btn btn-primary" v-bind:disabled="grant_type !== 'code'" v-on:click="loginButtonClick">
                 Login
             </button>
-            <button id="button-token" type="button" class="btn btn-primary" v-bind:disabled="authorizationCode.length === 0">
+            <button id="button-token" type="button" class="btn btn-primary" v-bind:disabled="grant_type === 'code' && authorizationCode.length === 0">
                 Get Tokens
             </button>
             <button id="button-profile" type="button" class="btn btn-primary" v-bind:disabled="accessToken.length === 0">
@@ -256,7 +256,7 @@ an access token.`
         return
       }
 
-      verifyProtocolMatch(url)
+      this.verifyProtocolMatch(url)
 
       axios
       .get(this.authority)
