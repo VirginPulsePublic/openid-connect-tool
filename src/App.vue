@@ -242,19 +242,21 @@ an access token.`
         return
       }
     },
+    verifyProtocolMatch (url) {
+      const protocol = url.protocol
+      if (window.location.protocol !== protocol) {
+        this.mismatchingProtocols = true
+      } else {
+        this.mismatchingProtocols = false
+      }
+    },
     testConnection: debounce(function () {
       const url = this.verifyAuthorityUrl()
       if (!url) {
         return
       }
 
-      const protocol = url.protocol
-
-      if (window.location.protocol !== protocol) {
-        this.mismatchingProtocols = true
-      } else {
-        this.mismatchingProtocols = false
-      }
+      verifyProtocolMatch(url)
 
       axios
       .get(this.authority)
