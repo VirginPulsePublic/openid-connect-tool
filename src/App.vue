@@ -104,22 +104,22 @@
             <button id="button-login" type="button" class="btn btn-primary" v-on:click="loginButtonClick">
                 Login
             </button>
-            <button id="button-token" type="button" class="btn btn-primary">
+            <button id="button-token" type="button" class="btn btn-primary" v-bind:disabled="authorizationCode.length === 0">
                 Get Tokens
             </button>
-            <button id="button-profile" type="button" class="btn btn-primary">
+            <button id="button-profile" type="button" class="btn btn-primary" v-bind:disabled="accessToken.length === 0">
                 Get Profile
             </button>
-            <button id="button-account" type="button" class="btn btn-primary">
+            <button id="button-account" type="button" class="btn btn-primary" v-bind:disabled="accessToken.length === 0">
                 Show Account
             </button>
-            <button id="button-logout" type="button" class="btn btn-default">
+            <button id="button-logout" type="button" class="btn btn-default" v-bind:disabled="accessToken.length === 0">
                 Logout
             </button>
         </div>
         <br> <br>
         <div class="btn-group">
-          <button id="button-go" type="button" class="btn btn-primary btn-lg" v-on:click="goButtonClick">
+          <button id="button-go" type="button" class="btn btn-primary btn-lg" v-bind:disabled="gotoUrl.length === 0" v-on:click="goButtonClick">
             Go!
           </button>
         </div>
@@ -156,6 +156,24 @@ export default {
   mounted () {
     this.testConnection()
   },
+  beforeMount () {
+    const url = new URL(window.location.href)
+    if (url.searchParams.has('code')) {
+      const code = url.searchParams.get('code')
+      if (code.length >= 0) {
+        this.authorizationCode = code
+        this.requestText =
+`code: ${this.authorizationCode}
+
+Oh! Looks like the user logged in and the issuer
+redirected to this page with a query parameter 'code'.
+
+Click on the "Get Tokens" button. This will prepare
+a request that will use the authentication code to fetch
+an access token.`
+      }
+    }
+  },
   data () {
     return merge({
       authority: '',
@@ -170,7 +188,10 @@ export default {
       mismatchingProtocols: false,
       badUrl: false,
       clickedButton: 'none',
-      requestText: ''
+      requestText: '',
+      authorizationCode: '',
+      gotoUrl: '',
+      accessToken: ''
     }, defaultSettings, JSON.parse(localStorage.getItem('settings')))
   },
   computed: {
