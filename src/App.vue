@@ -22,13 +22,13 @@
             </label>
             <div class="col-md-5">
               <select id="grant_type" class="form-control" name="grant_type" v-model="grant_type">
-                <option value="code">Authorization Code Grant</option>
-                <option value="password">Resource Owner Password Credentials Grant</option>
-                <option value="client_credentials">Client Credentials Grant</option>
+                <option :value="codeGrant">Authorization Code Grant</option>
+                <option :value="passwordGrant">Resource Owner Password Credentials Grant</option>
+                <option :value="clientCredentialsGrant">Client Credentials Grant</option>
               </select>
             </div>
           </div>
-          <div v-show="grant_type === 'password'">
+          <div v-show="grant_type === passwordGrant">
             <div class="form-group">
               <label for="username" class="col-md-2 control-label">
                 Username
@@ -101,32 +101,32 @@
       </div>
       <div class="panel-body">
         <div class="btn-group">
-            <button id="button-login" type="button" class="btn btn-primary" v-bind:disabled="grant_type !== 'code'" v-on:click="loginButtonClick">
+            <button id="button-login" type="button" class="btn btn-primary" v-bind:disabled="(grant_type !== codeGrant)" v-on:click="loginButtonClick">
                 Login
             </button>
-            <button id="button-token" type="button" class="btn btn-primary" v-bind:disabled="grant_type === 'code' && authorizationCode.length === 0">
+            <button id="button-token" type="button" class="btn btn-primary" v-bind:disabled="(grant_type === codeGrant) && !hasAuthorizationCode" v-on:click="getTokenButtonClick">
                 Get Tokens
             </button>
-            <button id="button-profile" type="button" class="btn btn-primary" v-bind:disabled="accessToken.length === 0">
+            <button id="button-profile" type="button" class="btn btn-primary" v-bind:disabled="!hasToken" v-on:click="getProfileButtonClick">
                 Get Profile
             </button>
-            <button id="button-account" type="button" class="btn btn-primary" v-bind:disabled="accessToken.length === 0">
+            <button id="button-account" type="button" class="btn btn-primary" v-bind:disabled="!hasToken" v-on:click="showAccountButtonClick">
                 Show Account
             </button>
-            <button id="button-logout" type="button" class="btn btn-default" v-bind:disabled="accessToken.length === 0">
+            <button id="button-logout" type="button" class="btn btn-default" v-bind:disabled="!hasToken" v-on:click="logoutButtonClick">
                 Logout
             </button>
         </div>
         <br> <br>
         <div class="btn-group">
-          <button id="button-go" type="button" class="btn btn-primary btn-lg" v-bind:disabled="gotoUrl.length === 0" v-on:click="goButtonClick">
+          <button id="button-go" type="button" class="btn btn-primary btn-lg" v-bind:disabled="!buttonClicked" v-on:click="goButtonClick">
             Go!
           </button>
         </div>
         <br> <br>
-        <textarea id="request" class="form-control" rows="7" value="" v-model="requestText" placeholder="This'll be populated with what the request would look like"></textarea>
+        <textarea id="request" class="form-control" rows="7" v-model="requestText" placeholder="This'll be populated with what the request would look like"></textarea>
         <br>
-        <textarea id="response" class="form-control" rows="5" placeholder="This is what the server's response will look like"></textarea>
+        <textarea id="response" class="form-control" rows="5" v-model="responseText" placeholder="This is what the server's response will look like"></textarea>
         <br> <br>
         <textarea id="decoded-token" class="form-control" rows="20" placeholder="When you acquire your tokens, this will populate with the decoded access token."></textarea>
       </div>
@@ -140,14 +140,24 @@ import debounce from 'lodash/debounce'
 import axios from 'axios'
 import queryString from 'query-string'
 
+const loginButton = 'login'
+const tokenButton = 'get-token'
+const profileButton = 'get-profile;'
+const accountButton = 'show-account'
+const logoutButton = 'logout'
+
+const codeGrant = 'code'
+const passwordGrant = 'password'
+const clientCredentialsGrant = 'client_credentials'
+
 let defaultSettings = {
   authority: 'http://locahost:8080/auth/realms/test',
-  grant_type: 'code',
+  grant_type: codeGrant,
   username: '',
   password: '',
   client_id: 'partner-public',
   client_secret: '',
-  scope: 'partner offline_access',
+  scope: 'events offline_access',
   redirect_uri: window.location.protocol + '//' + window.location.host
 }
 
@@ -163,7 +173,7 @@ export default {
       if (code.length >= 0) {
         this.authorizationCode = code
         this.requestText =
-`code: ${this.authorizationCode}
+`Authorization Code Detected: ${this.authorizationCode}
 
 Oh! Looks like the user logged in and the issuer
 redirected to this page with a query parameter 'code'.
@@ -177,7 +187,7 @@ an access token.`
   data () {
     return merge({
       authority: '',
-      grant_type: 'code',
+      grant_type: codeGrant,
       username: '',
       password: '',
       client_id: '',
@@ -187,14 +197,26 @@ an access token.`
       connection: 'untested',
       mismatchingProtocols: false,
       badUrl: false,
-      clickedButton: 'none',
       requestText: '',
       authorizationCode: '',
-      gotoUrl: '',
-      accessToken: ''
+      accessToken: '',
+      responseText: '',
+      lastButton: '',
+      codeGrant: codeGrant,
+      passwordGrant: passwordGrant,
+      clientCredentialsGrant: clientCredentialsGrant
     }, defaultSettings, JSON.parse(localStorage.getItem('settings')))
   },
   computed: {
+    hasAuthorizationCode () {
+      return this.authorizationCode.length > 0
+    },
+    hasToken () {
+      return this.accessToken.length > 0
+    },
+    buttonClicked () {
+      return this.lastButton.length !== ''
+    },
     protocolUrl () {
       return this.authority + '/protocol/openid-connect'
     },
@@ -267,36 +289,84 @@ an access token.`
       })
     }, 1000),
     loginButtonClick () {
-      switch (this.grant_type) {
-        case 'code':
-          const url = new URL(this.authUrl)
-          url.search = queryString.stringify({
-            client_id: this.client_id,
-            redirect_uri: this.redirect_uri,
-            scope: this.scope,
-            response_type: this.grant_type
-          })
-          this.clickedButton = 'login'
-          this.requestText =
-      `Request Method: GET
+      const url = new URL(this.authUrl)
+      url.search = queryString.stringify({
+        client_id: this.client_id,
+        redirect_uri: this.redirect_uri,
+        scope: this.scope,
+        response_type: 'code'
+      })
+
+      this.requestText =
+  `Request Method: GET
 Request URL (Line breaks added for readability):
 ${url.toString().replace(/&/g, '&\n').replace(/\?/g, '?\n')}`
-          this.gotoUrl = url.toString()
+
+      this.lastButton = loginButton
+      this.loginUrl = url.toString()
+    },
+    getTokenButtonClick () {
+      switch (this.grant_type) {
+        case codeGrant:
+          let postBody = {
+            code: this.authorizationCode,
+            grant_type: 'authorization_code',
+            client_id: this.client_id,
+            redirect_uri: this.redirect_uri
+          }
+          this.requestText =
+            `Request Method: POST
+Request URL: ${this.tokenEndpoint}
+Post Body: ${queryString.stringify(postBody).replace(/&/g, '&\n').replace(/\?/g, '?\n')}`
+
+          this.lastButton = tokenButton
+          this.postBody = postBody
+
           break
-        case 'password':
+        case passwordGrant:
           break
-        case 'client_credentials':
+        case clientCredentialsGrant:
           break
       }
     },
+    getProfileButtonClick () {
+      this.lastButton = profileButton
+    },
+    showAccountButtonClick () {
+      this.lastButton = accountButton
+    },
+    logoutButtonClick () {
+      this.lastButton = logoutButton
+    },
     goButtonClick () {
       switch (this.grant_type) {
-        case 'code':
-          window.location.href = this.gotoUrl
+        case codeGrant:
+          if (this.lastButton === loginButton) {
+            window.location.href = this.loginUrl
+          } else if (this.lastButton === tokenButton) {
+            axios.post(this.tokenEndpoint, queryString.stringify(this.postBody))
+              .then((response) => {
+                this.responseText = JSON.stringify(response.data, null, 4)
+              })
+              .catch((error) => {
+                if (error.response) {
+                  // The request was made and the server responded with a status code
+                  // that falls out of the range of 2xx
+                  console.log(error.response.data)
+                  console.log(error.response.status)
+                  console.log(error.response.headers)
+                } else if (error.request) {
+                  // The request was made but no response was received
+                  // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+                  // http.ClientRequest in node.js
+                  console.log(error.request)
+                }
+              })
+          }
           break
-        case 'password':
+        case passwordGrant:
           break
-        case 'client_credentials':
+        case clientCredentialsGrant:
           break
       }
     }
