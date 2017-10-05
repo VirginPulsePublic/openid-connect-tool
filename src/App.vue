@@ -15,7 +15,6 @@
             </label>
             <div v-bind:class="{ 'has-warning': mismatchingProtocols }" class="col-md-5">
               <input id="authority" class="form-control" type="url" name="authority" v-model="authority" v-on:change="testConnection" v-on:keydown="testConnection">
-              <div v-show="mismatchingProtocols" class="alert alert-warning" role="alert">Mismatching protocols detected. Browser might block connection test.</div>
               <div v-show="badUrl" class="alert alert-error" role="alert">The URL you provided is malformed.</div>
             </div>
           </div>
@@ -26,8 +25,10 @@
             <div class="col-md-5">
               <select id="grant_type" class="form-control" name="grant_type" v-model="grant_type">
                 <option :value="codeGrant">Authorization Code Grant</option>
-                <option :value="passwordGrant">Resource Owner Password Credentials Grant</option>
-                <option :value="clientCredentialsGrant">Client Credentials Grant</option>
+                <!--
+                  <option :value="passwordGrant">Resource Owner Password Credentials Grant</option>
+                  <option :value="clientCredentialsGrant">Client Credentials Grant</option>
+                -->
               </select>
             </div>
           </div>
@@ -234,7 +235,7 @@ an access token.`
       return this.protocolUrl + '/userinfo'
     },
     accountUrl () {
-      return this.protocolUrl + '/account/applications'
+      return this.authority + '/account/applications'
     },
     logoutUrl () {
       return this.protocolUrl + '/logout'
@@ -318,6 +319,7 @@ ${url.toString().replace(/&/g, '&\n').replace(/\?/g, '?\n')}`
       this.loginUrl = url.toString()
     },
     getTokenButtonClick () {
+      this.lastButton = tokenButton
       switch (this.grant_type) {
         case codeGrant:
           let postBody = {
@@ -331,9 +333,7 @@ ${url.toString().replace(/&/g, '&\n').replace(/\?/g, '?\n')}`
 Request URL: ${this.tokenEndpoint}
 Post Body: ${queryString.stringify(postBody).replace(/&/g, '&\n').replace(/\?/g, '?\n')}`
 
-          this.lastButton = tokenButton
           this.postBody = postBody
-
           break
         case passwordGrant:
           break
@@ -343,9 +343,18 @@ Post Body: ${queryString.stringify(postBody).replace(/&/g, '&\n').replace(/\?/g,
     },
     getProfileButtonClick () {
       this.lastButton = profileButton
+      this.requestText =
+`Request method: GET
+Request URL: ${this.userInfoUrl}
+Request Headers:
+  Authorization: Bearer ${this.accessToken}
+`
     },
     showAccountButtonClick () {
       this.lastButton = accountButton
+      this.requestText =
+`Request Method: GET
+${this.accountUrl}`
     },
     logoutButtonClick () {
       this.lastButton = logoutButton
@@ -387,15 +396,14 @@ Request URL: ${url.toString()}
               })
           break
         case profileButton:
-          axios.get(this.userInfoUrl, {
+          axios.post(this.userInfoUrl, null, {
             headers: {
               'Authorization': `Bearer ${this.accessToken}`
             }
-          })
-          .then((response) => {
+          }).then((response) => {
             console.log(response)
-          })
-          .catch((error) => {
+            this.responseText = JSON.stringify(response.data, null, 4)
+          }).catch((error) => {
             console.log(error)
           })
           break
