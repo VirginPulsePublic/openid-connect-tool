@@ -1,5 +1,8 @@
 <template>
-  <div class="app v-cloak" id="app">
+  <div class="app container-fluid col-xs-12 col-sm-10 col-sm-offset-1 col-lg-8 col-lg-offset-2v-cloak">
+    <div class="row">
+      <h1 class="col-xs-12">OIDC Tool</h1>
+    </div>
     <div class="panel panel-default">
       <div class="panel-heading">
         App settings
@@ -83,7 +86,7 @@
               <button type="button" class="btn btn-primary" v-on:click="saveSettings">
                 Save
               </button>
-              <button id="test-issuer" type="button" class="btn" v-bind:class="{ 'btn-warning': connection === 'untested', 'btn-success': connection === 'good', 'btn-danger': connection === 'bad' }">
+              <button id="test-issuer" type="button" class="btn" v-on:click="testConnection" v-bind:class="{ 'btn-warning': connection === 'untested', 'btn-success': connection === 'good', 'btn-danger': connection === 'bad' }">
                 <span class="glyphicon" v-bind:class="{ 'glyphicon-thumbs-down': connection === 'untested' || connection === 'bad', 'glyphicon-thumbs-up': connection === 'good' }" aria-hidden="true"></span>
                 Test Issuer URL
               </button>
@@ -158,6 +161,7 @@ let defaultSettings = {
   client_id: 'partner-public',
   client_secret: '',
   scope: 'events offline_access',
+  accessToken: '',
   redirect_uri: window.location.protocol + '//' + window.location.host
 }
 
@@ -228,6 +232,12 @@ an access token.`
     },
     userInfoUrl () {
       return this.protocolUrl + '/userinfo'
+    },
+    accountUrl () {
+      return this.protocolUrl + '/account/applications'
+    },
+    logoutUrl () {
+      return this.protocolUrl + '/logout'
     }
   },
   methods: {
@@ -240,6 +250,7 @@ an access token.`
         client_id: this.client_id,
         client_secret: this.client_secret,
         scope: this.scope,
+        accessToken: this.accessToken,
         redirect_uri: this.redirect_uri
       }))
     },
@@ -252,6 +263,7 @@ an access token.`
       this.client_secret = defaultSettings.client_secret
       this.scope = defaultSettings.scope
       this.redirect_uri = defaultSettings.redirect_uri
+      this.accessToken = defaultSettings.accessToken
       this.saveSettings()
     },
     verifyAuthorityUrl () {
@@ -337,16 +349,27 @@ Post Body: ${queryString.stringify(postBody).replace(/&/g, '&\n').replace(/\?/g,
     },
     logoutButtonClick () {
       this.lastButton = logoutButton
+      const url = new URL(this.logoutUrl)
+      url.search = queryString.stringify({
+        redirect_uri: this.redirect_uri
+      })
+      this.requestText =
+`Request Method: GET
+Request URL: ${url.toString()}
+`
+      this.logoutRedirect = url
     },
     goButtonClick () {
-      switch (this.grant_type) {
-        case codeGrant:
-          if (this.lastButton === loginButton) {
-            window.location.href = this.loginUrl
-          } else if (this.lastButton === tokenButton) {
-            axios.post(this.tokenEndpoint, queryString.stringify(this.postBody))
+      switch (this.lastButton) {
+        case loginButton:
+          window.location.href = this.loginUrl
+          break
+        case tokenButton:
+          axios.post(this.tokenEndpoint, queryString.stringify(this.postBody))
               .then((response) => {
                 this.responseText = JSON.stringify(response.data, null, 4)
+                this.accessToken = response.data.access_token
+                this.saveSettings()
               })
               .catch((error) => {
                 if (error.response) {
@@ -362,11 +385,29 @@ Post Body: ${queryString.stringify(postBody).replace(/&/g, '&\n').replace(/\?/g,
                   console.log(error.request)
                 }
               })
-          }
           break
-        case passwordGrant:
+        case profileButton:
+          axios.get(this.userInfoUrl, {
+            headers: {
+              'Authorization': `Bearer ${this.accessToken}`
+            }
+          })
+          .then((response) => {
+            console.log(response)
+          })
+          .catch((error) => {
+            console.log(error)
+          })
           break
-        case clientCredentialsGrant:
+        case accountButton:
+          window.location.href = this.accountUrl
+          break
+        case logoutButton:
+          this.accessToken = ''
+          this.authorizationCode = ''
+          this.lastButton = ''
+          this.saveSettings()
+          window.location.href = this.logoutRedirect.toString()
           break
       }
     }
