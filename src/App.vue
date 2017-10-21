@@ -1,5 +1,5 @@
 <template>
-  <div class="app container-fluid col-xs-12 col-sm-10 col-sm-offset-1 col-lg-8 col-lg-offset-2v-cloak">
+  <div class="app container-fluid col-xs-12 col-sm-10 col-sm-offset-1 col-lg-8 col-lg-offset-2 v-cloak">
     <div class="row">
       <h1 class="col-xs-12">OIDC Tool</h1>
     </div>
@@ -13,7 +13,7 @@
             <label for="authority" class="col-md-2 control-label">
               Issuer URL
             </label>
-            <div v-bind:class="{ 'has-warning': mismatchingProtocols }" class="col-md-5">
+            <div v-bind:class="{ 'has-warning': mismatchingProtocols }" class="col-md-10">
               <input id="authority" class="form-control" type="url" name="authority" v-model="authority" v-on:change="testConnection" v-on:keydown="testConnection">
               <div v-show="badUrl" class="alert alert-error" role="alert">The URL you provided is malformed.</div>
             </div>
@@ -22,7 +22,7 @@
             <label for="grant_type" class="col-md-2 control-label">
               Grant Type
             </label>
-            <div class="col-md-5">
+            <div class="col-md-10">
               <select id="grant_type" class="form-control" name="grant_type" v-model="grant_type">
                 <option :value="codeGrant">Authorization Code Grant</option>
                 <!--
@@ -37,7 +37,7 @@
               <label for="username" class="col-md-2 control-label">
                 Username
               </label>
-              <div class="col-md-5">
+              <div class="col-md-10">
                 <input id="username" class="form-control" type="text" name="username" placeholder="Username you want to login with" v-model="username">
               </div>
             </div>
@@ -45,7 +45,7 @@
               <label for="password" class="col-md-2 control-label">
                 Password
               </label>
-              <div class="col-md-5">
+              <div class="col-md-10">
                 <input id="password" class="form-control" type="password" name="password" v-model="password">
               </div>
             </div>
@@ -54,7 +54,7 @@
             <label for="client_id" class="col-md-2 control-label">
               Client ID
             </label>
-            <div class="col-md-5">
+            <div class="col-md-10">
               <input id="client_id" class="form-control" type="text" name="client_id" v-model="client_id">
             </div>
           </div>
@@ -62,7 +62,7 @@
             <label for="client_secret" class="col-md-2 control-label">
               Client Secret
             </label>
-            <div class="col-md-5">
+            <div class="col-md-10">
                 <input id="client_secret" class="form-control" type="text" name="client_secret" placeholder="Fill me in if you have a secret" v-model="client_secret">
             </div>
           </div>
@@ -70,7 +70,7 @@
             <label for="scope" class="col-md-2 control-label">
               Scope
             </label>
-            <div class="col-md-5">
+            <div class="col-md-10">
               <input id="scope" class="form-control" type="text" name="scope" v-model="scope">
             </div>
           </div>
@@ -78,7 +78,7 @@
             <label for="redirect_uri" class="col-md-2 control-label">
               Redirect Uri
             </label>
-            <div class="col-md-5">
+            <div class="col-md-10">
                 <input id="redirect_uri"  class="form-control" type="text" name="redirect_uri" v-model="redirect_uri">
             </div>
           </div>
